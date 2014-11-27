@@ -27,7 +27,7 @@ from management import PulseManagementAPI
 from model.user import User
 from model.pulse_user import PulseUser
 from model.queue import Queue
-from model.base import db_session, init_db
+from model.base import db_session
 
 from docker_setup import (
     create_image, setup_container, teardown_container, check_rabbitmq
@@ -94,10 +94,11 @@ class GuardianTest(unittest.TestCase):
     def setUp(self):
         global pulse_cfg
 
-        self.management_api = PulseManagementAPI(host=pulse_cfg['host'],
-                                                 user=pulse_cfg['user'],
-                                                 management_port=pulse_cfg['management_port'],
-                                                 password=pulse_cfg['password'])
+        self.management_api = PulseManagementAPI(
+            host=pulse_cfg['host'],
+            user=pulse_cfg['user'],
+            management_port=pulse_cfg['management_port'],
+            password=pulse_cfg['password'])
         self.guardian = PulseGuardian(self.management_api,
                                       warn_queue_size=TEST_WARN_SIZE,
                                       del_queue_size=TEST_DELETE_SIZE,
@@ -288,7 +289,8 @@ class GuardianTest(unittest.TestCase):
         # And that no queue has overgrown.
         queues_to_delete = [q_data['name'] for q_data
                             in self.management_api.queues()
-                            if q_data['messages_ready'] > self.guardian.del_queue_size]
+                            if q_data['messages_ready'] >
+                               self.guardian.del_queue_size]
         self.assertTrue(len(queues_to_delete) == 0)
 
 
@@ -378,7 +380,8 @@ def main(pulse_opts):
 
                 # Timeout exceeded
                 if time.time() > timeout:
-                    raise RuntimeError('rabbitmq-server startup timeout exceeded')
+                    raise RuntimeError('rabbitmq-server startup timeout '
+                                       'exceeded')
 
                 # We don't want to hog the CPU, so we sleep 1 second before
                 # trying again.
@@ -391,6 +394,7 @@ def main(pulse_opts):
     else:
         unittest.main(argv=sys.argv[0:1])
 
+
 if __name__ == '__main__':
     from optparse import OptionParser
     parser = OptionParser()
@@ -402,7 +406,8 @@ if __name__ == '__main__':
                       default=DEFAULT_RABBIT_PORT,
                       help='port on which RabbitMQ is running; defaults to %d'
                       % DEFAULT_RABBIT_PORT)
-    parser.add_option('--management-port', action='store', type='int', dest='management_port',
+    parser.add_option('--management-port', action='store', type='int',
+                      dest='management_port',
                       default=DEFAULT_RABBIT_MANAGEMENT_PORT,
                       help='RabbitMQ managment port; defaults to %d'
                       % DEFAULT_RABBIT_MANAGEMENT_PORT)
