@@ -101,6 +101,8 @@ class GuardianTest(unittest.TestCase):
     proc = None
     QUEUE_CHECK_PERIOD = 0.05
     QUEUE_CHECK_ATTEMPTS = 4000
+    QUEUE_RECORD_CHECK_PERIOD = 0.1
+    QUEUE_RECORD_CHECK_ATTEMPTS = 50
     PUBLISHER_CONNECT_ATTEMPTS = 50
 
     def setUp(self):
@@ -194,23 +196,33 @@ class GuardianTest(unittest.TestCase):
         attempts = 0
         while attempts < self.QUEUE_CHECK_ATTEMPTS:
             attempts += 1
+            if attempts > 1:
+                time.sleep(self.QUEUE_CHECK_PERIOD)
             if consumer.queue_exists() == queue_should_exist:
                 break
-            time.sleep(self.QUEUE_CHECK_PERIOD)
         self.assertEqual(consumer.queue_exists(), queue_should_exist)
+
+    def _wait_for_queue_record(self):
+        '''Wait until one or more queues have been added to the database.'''
+        attempts = 0
+        while attempts < self.QUEUE_RECORD_CHECK_ATTEMPTS:
+            attempts += 1
+            if attempts > 1:
+                time.sleep(self.QUEUE_RECORD_CHECK_PERIOD)
+            self.guardian.monitor_queues(self.management_api.queues())
+            if Queue.query.first():
+                break
 
     def test_abnormal_queue_name(self):
         self.consumer_class = AbnormalQueueConsumer
+        # Use account with full permissions.
         self.consumer_cfg['user'] = pulse_cfg['user']
         self.consumer_cfg['password'] = pulse_cfg['password']
 
         self._create_publisher()
         self._create_consumer_proc()
         self._wait_for_queue()
-
-        for i in xrange(10):
-            self.guardian.monitor_queues(self.management_api.queues())
-            time.sleep(0.2)
+        self._wait_for_queue_record()
 
         queue = Queue.query.filter(Queue.name ==
                                    AbnormalQueueConsumer.QUEUE_NAME).first()
@@ -230,19 +242,13 @@ class GuardianTest(unittest.TestCase):
         self._create_publisher()
         self._create_consumer_proc(durable=True)
         self._wait_for_queue()
-
-        # Monitor the queues; this should create the queue object and assign
-        # it to the user.
-        for i in xrange(10):
-            self.guardian.monitor_queues(self.management_api.queues())
-            time.sleep(0.2)
-
+        self._wait_for_queue_record()
         self._terminate_consumer_proc()
 
         # Queue should still exist.
         self._wait_for_queue()
 
-        # Get the queue's object
+        # Get the queue's object.
         db_session.refresh(self.pulse_user)
 
         # Queue multiple messages while no consumer exists.
@@ -289,13 +295,7 @@ class GuardianTest(unittest.TestCase):
         self._create_publisher()
         self._create_consumer_proc(durable=True)
         self._wait_for_queue()
-
-        # Monitor the queues; this should create the queue object and assign
-        # it to the user.
-        for i in xrange(10):
-            self.guardian.monitor_queues(self.management_api.queues())
-            time.sleep(0.2)
-
+        self._wait_for_queue_record()
         self._terminate_consumer_proc()
 
         # Queue should still exist.
