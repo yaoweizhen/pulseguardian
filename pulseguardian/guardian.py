@@ -10,8 +10,7 @@ from pulseguardian import config
 from pulseguardian.logs import setup_logging
 from pulseguardian.management import PulseManagementAPI
 from pulseguardian.model.base import init_db, db_session
-from pulseguardian.model.user import PulseUser
-from pulseguardian.model.queue import Queue
+from pulseguardian.model.models import PulseUser, Queue
 from pulseguardian.sendemail import sendemail
 
 logging.getLogger("requests").setLevel(logging.WARNING)
@@ -113,7 +112,7 @@ class PulseGuardian(object):
             queue = self.update_queue_information(queue_data)
             if not queue:
                 continue
-
+            
             # If a queue is over the deletion size, regardless of it having an
             # owner or not, delete it.
             if queue.size > self.del_queue_size:
@@ -179,12 +178,8 @@ durable queues.
            queue_data['messages'], self.del_queue_size)
 
         if self.emails and user.email is not None:
-            sendemail(subject=subject, from_addr=config.email_from,
-                      to_addrs=[user.email], username=config.email_account,
-                      password=config.email_password, text_data=body,
-                      server=config.email_smtp_server,
-                      port=config.email_smtp_port,
-                      use_ssl=config.email_ssl)
+            self._sendemail(subject=subject, body=body,
+                           user=user, queue_data=queue_data)
 
     def deletion_email(self, user, queue_data):
         exchange = self._exchange_from_queue(queue_data)
@@ -201,12 +196,8 @@ durable queues.
            self.del_queue_size)
 
         if self.emails and user.email is not None:
-            sendemail(subject=subject, from_addr=config.email_from,
-                      to_addrs=[user.email], username=config.email_account,
-                      password=config.email_password, text_data=body,
-                      server=config.email_smtp_server,
-                      port=config.email_smtp_port,
-                      use_ssl=config.email_ssl)
+            self._sendemail(subject=subject, body=body,
+                           user=user, queue_data=queue_data)
 
     def back_to_normal_email(self, user, queue_data):
         exchange = self._exchange_from_queue(queue_data)
@@ -219,12 +210,19 @@ now back to normal ({2} ready messages, {3} total messages).
            queue_data['messages'], self.del_queue_size)
 
         if self.emails and user.email is not None:
-            sendemail(subject=subject, from_addr=config.email_from,
-                      to_addrs=[user.email], username=config.email_account,
-                      password=config.email_password, text_data=body,
-                      server=config.email_smtp_server,
-                      port=config.email_smtp_port,
-                      use_ssl=config.email_ssl)
+            self._sendemail(subject=subject, body=body,
+                           user=user, queue_data=queue_data)
+
+    def _sendemail(self, subject, body, user, queue_data):
+        to_addrs = []
+        to_addrs.append(user.email.address)
+        to_addrs.extend(Queue.get_notifications(queue_data['name']))
+        sendemail(subject=subject, from_addr=config.email_from,
+                  to_addrs=to_addrs, username=config.email_account,
+                  password=config.email_password, text_data=body,
+                  server=config.email_smtp_server,
+                  port=config.email_smtp_port,
+                  use_ssl=config.email_ssl)
 
     def guard(self):
         logging.info("PulseGuardian started")
