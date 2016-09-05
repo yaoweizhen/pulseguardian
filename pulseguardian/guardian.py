@@ -112,7 +112,7 @@ class PulseGuardian(object):
             queue = self.update_queue_information(queue_data)
             if not queue:
                 continue
-            
+
             # If a queue is over the deletion size, regardless of it having an
             # owner or not, delete it.
             if queue.size > self.del_queue_size:
@@ -179,7 +179,7 @@ durable queues.
 
         if self.emails and user.email is not None:
             self._sendemail(subject=subject, body=body,
-                           user=user, queue_data=queue_data)
+                            user=user, queue_data=queue_data)
 
     def deletion_email(self, user, queue_data):
         exchange = self._exchange_from_queue(queue_data)
@@ -197,7 +197,7 @@ durable queues.
 
         if self.emails and user.email is not None:
             self._sendemail(subject=subject, body=body,
-                           user=user, queue_data=queue_data)
+                            user=user, queue_data=queue_data)
 
     def back_to_normal_email(self, user, queue_data):
         exchange = self._exchange_from_queue(queue_data)
@@ -211,12 +211,14 @@ now back to normal ({2} ready messages, {3} total messages).
 
         if self.emails and user.email is not None:
             self._sendemail(subject=subject, body=body,
-                           user=user, queue_data=queue_data)
+                            user=user, queue_data=queue_data)
 
     def _sendemail(self, subject, body, user, queue_data):
-        to_addrs = []
-        to_addrs.append(user.email.address)
-        to_addrs.extend(Queue.get_notifications(queue_data['name']))
+        to_addrs = [user.email.address]
+        notifications = Queue.get_notifications(queue_data['name'])
+        for notification in notifications:
+            to_addrs.append(notification.address)
+
         sendemail(subject=subject, from_addr=config.email_from,
                   to_addrs=to_addrs, username=config.email_account,
                   password=config.email_password, text_data=body,

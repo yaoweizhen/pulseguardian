@@ -96,16 +96,10 @@ $(document).ready(function() {
         var email = current.find('input[name="email"]').val();
         var queue = current.find('input[name="queue"]').val();
 
-        var validate = function() {
-            if (email == '') {
-                current.find('.message').text('Email is empty');
-                return false;
-            }
-
-            return true;
-        };
-
-        if (!validate()) return;
+        if (email == '') {
+          current.find('.message').text('Email is empty');
+          return false;
+        }
 
         var postData = {'email':email,'queue':queue};
         $.post('/notification/create', postData, 'json')

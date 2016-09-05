@@ -25,8 +25,12 @@ from pulseguardian import config
 from pulseguardian.logs import setup_logging
 from pulseguardian.management import (PulseManagementAPI,
                                       PulseManagementException)
-from pulseguardian.model.base import db_session, init_db
-from pulseguardian.model.models import User, PulseUser, Queue, Email
+from pulseguardian.model.base import (db_session,
+                                      init_db)
+from pulseguardian.model.models import (User,
+                                        PulseUser,
+                                        Queue,
+                                        Email)
 
 # Development cert/key base filename.
 DEV_CERT_BASE = 'dev'
@@ -117,11 +121,6 @@ def load_fake_account(fake_account):
     session['email'] = fake_account
     session['fake_account'] = True
     session['logged_in'] = True
-
-    # Check if user already exists in the database, creating it if not.
-    # g.user = User.query.join(Email).filter(Email.address == fake_account).one()
-    # if g.user is None:
-    #     g.user = User.new_user(fake_account)
 
 
 def requires_login(f):
@@ -260,7 +259,6 @@ def delete_pulse_user(pulse_username):
     logging.info('Request to delete Pulse user "{0}".'.format(pulse_username))
     pulse_user = PulseUser.query.filter(PulseUser.username == pulse_username).first()
 
-
     if pulse_user and (g.user.admin or pulse_user.owner == g.user):
         try:
             pulse_management.delete_user(pulse_user.username)
@@ -279,21 +277,19 @@ def delete_pulse_user(pulse_username):
 @requires_login
 def notification_create():
     error = []
-    if ('email' not in request.values or
-        not request.values['email']):
-       error.append('Email is required')
-    if ('queue' not in request.values or
-        not request.values['queue']):
-       error.append('Queue is required')
+    if not request.values.get('email'):
+        error.append('Email is required')
+    if not request.values.get('queue'):
+        error.append('Queue is required')
 
     if not error:
         email = request.values['email']
         queue = request.values['queue']
         queue_query = Queue.query.filter(Queue.id==queue)
         if not queue_query.count():
-            error.append('Queue is not exist')
+            error.append('Queue does not exist.')
         elif Queue.notification_exists(queue, email):
-            error.append('This is email address is exist')
+            error.append('This notification address already exists.')
         else:
             Queue.create_notification(queue, email)
 
@@ -307,12 +303,10 @@ def notification_create():
 @requires_login
 def notification_delete():
     error = []
-    if ('notification' not in request.values or
-        not request.values['notification']):
-       error.append('Notification is required')
-    if ('queue' not in request.values or
-        not request.values['queue']):
-       error.append('Queue is required')
+    if not request.values.get('notification'):
+        error.append('Notification is required.')
+    if not request.values.get('queue'):
+        error.append('Queue is required.')
 
     if not error:
         queue = request.values['queue'];
