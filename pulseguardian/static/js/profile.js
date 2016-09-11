@@ -9,7 +9,7 @@
 
 $(document).ready(function() {
     // Auto-reload
-    var autoReload = false;
+    var autoReload = true;
     var reloadInterval = 8000;
 
     function deleteableObjectHandler(objectType) {
@@ -86,34 +86,33 @@ $(document).ready(function() {
     deleteableObject('pulse-user');
 
     // notification create
-    $('.notifications form button[type="submit"]').click(function(event) {
+    $('#notification-modal form button[type="submit"]').click(function(event) {
         event.preventDefault();
-
         var that = this;
-        var current = $(that).parents('.notifications');
-        current.find('.message').text('');
+        var modal = $('#notification-modal');
+        modal.find('.message').text('');
 
-        var email = current.find('input[name="email"]').val();
-        var queue = current.find('input[name="queue"]').val();
-
+        var email = modal.find('input[name="email"]').val();
+        var queue = modal.find('input[name="queue"]').val();
         if (email == '') {
-          current.find('.message').text('Email is empty');
+          modal.find('.message').text('Email is empty');
           return false;
         }
 
         var postData = {'email':email,'queue':queue};
         $.post('/notification/create', postData, 'json')
             .fail(function(xhr) {
-                current.find('.message').text(xhr.statusText+' - '+xhr.status);
+                modal.find('.message').text(xhr.statusText+' - '+xhr.status);
             })
             .done(function(data, textStatus, xhr) {
                 if (data.ok) {
                     var removeBtn = '<button type="button" class="btn-primary close" aria-label="Close"><span aria-hidden="true">&times;</span></button>';
                     var emailItem = '<li class="pull-left"><span>'+email+'</span>'+removeBtn+'</li>';
-                    current.find('.emails').append(emailItem);
-                    current.find('input[name="email"]').val('');
+                    $('#queue-' + queue + ' .notifications .emails').append(emailItem);
+                    modal.find('input[name="email"]').val('');
+                    modal.modal('hide');
                 } else {
-                    current.find('.message').text(data.message);
+                    modal.find('.message').text(data.message);
                 }
             });
     });
@@ -124,7 +123,7 @@ $(document).ready(function() {
         var current = $(that).parents('.notifications');
         var postData = {
             'notification': $(this).siblings('span').text(),
-            'queue': current.find('input[name="queue"]').val()
+            'queue': $(this).parent().data('queue')
         };
         $.post('/notification/delete', postData, 'json')
             .fail(function(xhr) {
@@ -135,5 +134,12 @@ $(document).ready(function() {
                     $(that).parent().remove();
                 }
             });
+    });
+
+    // notfication modal
+    $('#notification-modal').on('show.bs.modal', function (event) {
+      var button = $(event.relatedTarget);
+      var queueId = button.data('queueId');
+      $(this).find('form input[name="queue"]').val(queueId);
     });
 });

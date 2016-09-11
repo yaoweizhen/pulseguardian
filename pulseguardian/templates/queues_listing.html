@@ -6,8 +6,7 @@
     {% set warning =  queue.size > config.warn_queue_size | int %}
     {% set bar_class = 'progress-bar-danger' if warning else '' %}
 
-    <li class="list-group-item queue"
-        data-queue-name="{{queue.name}}">
+    <li class="list-group-item queue" id="queue-{{queue.id}}" data-queue-name="{{queue.name}}">
       <span class="pull-right">
         <span class="glyphicon glyphicon-remove delete"></span>
       </span>
@@ -35,21 +34,18 @@
               <h3 class="text-primary pull-left">Notifications:</h3>
               <ul class="emails">
                   {% for notification in queue.notifications %}
-                  <li class="pull-left">
+                  <li class="pull-left" data-queue={{queue.id}}>
                       <span>{{ notification.address }}</span>
                       <button type="button" class="btn-primary close" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                   </li>
                   {% endfor %}
               </ul>
           </div>
-          <form>
-              <input name="email" type="text" />
-              <input name="queue" type="hidden" value="{{queue.id}}">
-              <button class="btn btn-primary btn-sm" type="submit">Add</button>
-          </form>
-          <div class="message text-warning"></div>
       </div>
-
+      <button type="button" class="btn btn-primary" data-toggle="modal"
+        data-target="#notification-modal" data-queue-id="{{queue.id}}">
+        Add notification
+      </button>
     </li>
   {% endfor %}
 </ul>
@@ -94,3 +90,6 @@
   <h3>Queues</h3>
   {{ user_information(cur_user) }}
 {% endif %}
+
+
+

@@ -10,9 +10,28 @@
 <div id="queues-info" class="col-md-12">
   {% include 'queues_listing.html' %}
 </div>
+
+<!-- Modal -->
+<div class="modal fade" id="notification-modal" tabindex="-1" role="dialog"
+  aria-labelledby="modalLabel">
+  <div class="modal-dialog modal-sm" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="modalLabel">Notification</h4>
+      </div>
+      <div class="modal-body">
+        <form>
+          <input name="email" type="text" />
+          <input name="queue" type="hidden" value="">
+          <button class="btn btn-primary btn-sm" type="submit">Add</button>
+        </form>
+        <div class="message text-warning"></div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block javascript %}
   <script type="text/javascript" src="/static/js/profile.js"></script>
 {% endblock %}
-
